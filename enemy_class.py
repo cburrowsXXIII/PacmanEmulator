@@ -6,13 +6,13 @@ vec = pygame.math.Vector2
 
 
 class Enemy:
-    def __init__(self, app, pos, number):
+    def __init__(self, app, pos, id):
         self.app = app
         self.grid_pos = pos
         self.starting_pos = [pos.x, pos.y]
         self.pix_pos = self.get_pix_pos()
         self.radius = int(self.app.cell_width//2.3)
-        self.number = number
+        self.enemy_id = id
         self.colour = self.set_colour()
         self.direction = vec(0, 0)
         self.personality = self.set_personality()
@@ -140,21 +140,21 @@ class Enemy:
                    self.app.cell_height//2)
 
     def set_colour(self):
-        if self.number == 0:
-            return (43, 78, 203)
-        if self.number == 1:
-            return (197, 200, 27)
-        if self.number == 2:
-            return (189, 29, 29)
-        if self.number == 3:
-            return (215, 159, 33)
+        if self.enemy_id == 0:
+            return RED
+        if self.enemy_id == 1:
+            return ORANGE
+        if self.enemy_id == 2:
+            return LILAC
+        if self.enemy_id == 3:
+            return AQUA
 
     def set_personality(self):
-        if self.number == 0:
+        if self.enemy_id == 0:
             return "speedy"
-        elif self.number == 1:
+        elif self.enemy_id == 1:
             return "slow"
-        elif self.number == 2:
+        elif self.enemy_id == 2:
             return "random"
         else:
             return "scared"
