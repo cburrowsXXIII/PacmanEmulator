@@ -14,15 +14,22 @@ class Player:
         self.able_to_move = True
         self.current_score = 0
         self.speed = 2
-        self.lives = 1
+        self.lives = 3
 
     def update(self):
+        # Movement Rules
         if self.able_to_move:
             self.pix_pos += self.direction*self.speed
         if self.time_to_move():
             if self.stored_direction != None:
-                self.direction = self.stored_direction
-            self.able_to_move = self.can_move()
+                if self.direction.x == self.stored_direction.x or self.direction.y == self.stored_direction.y:
+                    self.direction = self.stored_direction
+                else:
+                    for turn in self.app.turns:
+                        if self.grid_pos == turn and self.can_move(self.stored_direction):
+                            self.direction = self.stored_direction
+                            
+            self.able_to_move = self.can_move(self.direction)
         # Setting grid position in reference to pix pos
         self.grid_pos[0] = (self.pix_pos[0]-TOP_BOTTOM_BUFFER +
                             self.app.cell_width//2)//self.app.cell_width+1
@@ -38,10 +45,6 @@ class Player:
         # Drawing player lives
         for x in range(self.lives):
             pygame.draw.circle(self.app.screen, PLAYER_COLOUR, (30 + 20*x, HEIGHT - 15), 7)
-
-        # Drawing the grid pos rect
-        # pygame.draw.rect(self.app.screen, RED, (self.grid_pos[0]*self.app.cell_width+TOP_BOTTOM_BUFFER//2,
-        #                                         self.grid_pos[1]*self.app.cell_height+TOP_BOTTOM_BUFFER//2, self.app.cell_width, self.app.cell_height), 1)
 
     def on_coin(self):
         if self.grid_pos in self.app.coins:
@@ -75,8 +78,9 @@ class Player:
             if self.direction == vec(0, 1) or self.direction == vec(0, -1) or self.direction == vec(0, 0):
                 return True
 
-    def can_move(self):
+    def can_move(self, direction):
         for wall in self.app.walls:
-            if vec(self.grid_pos+self.direction) == wall:
+            if vec(self.grid_pos+direction) == wall:
                 return False
         return True
+
