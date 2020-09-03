@@ -10,7 +10,7 @@ class Player:
         self.speed = 2
         self.stored_direction = None
         self.able_to_move = True
-        self.current_score = 0
+        self.current_score = 1
 
     def update(self):
         if self.able_to_move:
