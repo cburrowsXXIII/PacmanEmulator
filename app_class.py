@@ -16,6 +16,7 @@ class App:
         self.cell_height = MAZE_HEIGHT//ROWS
         self.walls = []
         self.coins = []
+        self.turns = []
         self.enemies = []
         self.e_pos = []
         self.p_pos = None
@@ -56,8 +57,10 @@ class App:
                 for xidx, char in enumerate(line):
                     if char == "1":
                         self.walls.append(vec(xidx, yidx))
-                    elif char == "C":
+                    elif char == "C" or char == "T":
                         self.coins.append(vec(xidx, yidx))
+                        if char == "T":
+                            self.turns.append(vec(xidx, yidx))
                     elif char == "P":
                         self.p_pos = [xidx, yidx]
                     elif char in ["2", "3", "4", "5"]:
@@ -87,11 +90,14 @@ class App:
             enemy.direction *= 0
 
         self.coins = []
+        self.turns = []
         with open("walls.txt", 'r') as file:
             for yidx, line in enumerate(file):
                 for xidx, char in enumerate(line):
-                    if char == 'C':
+                    if char == 'C' or char == "T":
                         self.coins.append(vec(xidx, yidx))
+                        if char == "T":
+                            self.turns.append(vec(xidx, yidx))
         self.state = "playing"
 
 
@@ -180,9 +186,9 @@ class App:
 
     def draw_coins(self):
         for coin in self.coins:
-            pygame.draw.circle(self.screen, (124, 123, 7),
+            pygame.draw.circle(self.screen, GREY,
                                (int(coin.x*self.cell_width)+self.cell_width//2+TOP_BOTTOM_BUFFER//2,
-                                int(coin.y*self.cell_height)+self.cell_height//2+TOP_BOTTOM_BUFFER//2), 5)
+                                int(coin.y*self.cell_height)+self.cell_height//2+TOP_BOTTOM_BUFFER//2), 2)
     def make_enemies(self):
         for idx, pos in enumerate(self.e_pos):
             self.enemies.append(Enemy(self, vec(pos), idx))
@@ -195,6 +201,7 @@ class App:
                 self.running = False
             if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
                 self.reset()
+                self.state = "start"
             if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                 self.running = False
 
@@ -203,11 +210,9 @@ class App:
 
     def game_over_draw(self):
         self.screen.fill(BLACK)
-        quit_text = "Press the escape button to QUIT"
-        again_text = "Press SPACE bar to PLAY AGAIN"
+        again_text = "CONTINUE [SPACE]"
         self.draw_text("GAME OVER", self.screen, [WIDTH//2, 100],  52, RED, "arial", centered=True)
         self.draw_text(again_text, self.screen, [
                        WIDTH//2, HEIGHT//2],  36, (190, 190, 190), "arial", centered=True)
-        self.draw_text(quit_text, self.screen, [
-                       WIDTH//2, HEIGHT//1.5],  36, (190, 190, 190), "arial", centered=True)
+        
         pygame.display.update()
