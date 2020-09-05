@@ -6,7 +6,7 @@ vec = pygame.math.Vector2
 
 
 class Enemy:
-    def __init__(self, app, pos, id):
+    def __init__(self, app, pos, id, scatter_target):
         self.app = app
         self.grid_pos = pos
         self.starting_pos = [pos.x, pos.y]
@@ -18,6 +18,10 @@ class Enemy:
         self.personality = self.set_personality()
         self.target = None
         self.speed = self.set_speed()
+        self.scatter_target = scatter_target
+        self.state = "chase"
+        self.scatter_timer = 0
+        self.clyde_timer = 0
 
     def update(self):
         self.target = self.set_target()
@@ -44,17 +48,29 @@ class Enemy:
         return speed
 
     def set_target(self):
-        if self.personality == "speedy" or self.personality == "slow":
-            return self.app.player.grid_pos
-        else:
-            if self.app.player.grid_pos[0] > COLS//2 and self.app.player.grid_pos[1] > ROWS//2:
-                return vec(1, 1)
-            if self.app.player.grid_pos[0] > COLS//2 and self.app.player.grid_pos[1] < ROWS//2:
-                return vec(1, ROWS-2)
-            if self.app.player.grid_pos[0] < COLS//2 and self.app.player.grid_pos[1] > ROWS//2:
-                return vec(COLS-2, 1)
+        if self.state == "scatter":            
+            self.colour = BLUE
+            self.scatter_timer += 1
+            if self.scatter_timer >= 300:
+                self.scatter_timer = 0
+                self.state = "chase"
+            if self.grid_pos == self.scatter_target:
+                return self.app.player.grid_pos
+            return self.scatter_target
+        elif self.state == "chase":
+            self.scatter_timer = 0
+            self.colour = self.set_colour()    
+            if self.personality == "speedy" or self.personality == "slow" or self.personality == "clyde":
+                return self.app.player.grid_pos
             else:
-                return vec(COLS-2, ROWS-2)
+                if self.app.player.grid_pos[0] > COLS//2 and self.app.player.grid_pos[1] > ROWS//2:
+                    return vec(1, 1)
+                if self.app.player.grid_pos[0] > COLS//2 and self.app.player.grid_pos[1] < ROWS//2:
+                    return vec(1, ROWS-2)
+                if self.app.player.grid_pos[0] < COLS//2 and self.app.player.grid_pos[1] > ROWS//2:
+                    return vec(COLS-2, 1)
+                else:
+                    return vec(COLS-2, ROWS-2)
 
     def time_to_move(self):
         if int(self.pix_pos.x+TOP_BOTTOM_BUFFER//2) % self.app.cell_width == 0:
@@ -66,8 +82,14 @@ class Enemy:
         return False
 
     def move(self):
-        if self.personality == "random":
-            self.direction = self.get_random_direction()
+        if self.personality == "clyde":
+            self.clyde_timer += 1
+            if self.clyde_timer >= 200:
+                self.direction = self.get_random_direction()
+                if self.clyde_timer >= 400:
+                    self.clyde_timer = 0
+            else:
+                self.direction = self.get_path_direction(self.target)
         if self.personality == "slow":
             self.direction = self.get_path_direction(self.target)
         if self.personality == "speedy":
@@ -155,6 +177,11 @@ class Enemy:
         elif self.enemy_id == 1:
             return "slow"
         elif self.enemy_id == 2:
-            return "random"
+            return "clyde"
         else:
             return "scared"
+
+    def change_state(self, state):
+        self.state = state
+    
+

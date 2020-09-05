@@ -2,6 +2,7 @@ import pygame, sys
 from settings import *
 from player_class import Player
 from enemy_class import Enemy
+from item_class import *
 
 pygame.init()
 vec = pygame.math.Vector2
@@ -14,15 +15,24 @@ class App:
         self.state = 'start'
         self.cell_width = MAZE_WIDTH//COLS
         self.cell_height = MAZE_HEIGHT//ROWS
+
+        #load from environment file
         self.walls = []
         self.coins = []
+        self.powerups = []
         self.turns = []
         self.enemies = []
+        self.scatter_targets = []
         self.e_pos = []
-        self.p_pos = None
-        self.load()
+        self.p_pos = None        
+        self.respawn = None  
+        self.load()     
+        
+
         self.player = Player(self, vec(self.p_pos))
         self.make_enemies()
+        self.current_score = 0
+        
 
     def run(self):
         while self.running:
@@ -43,6 +53,7 @@ class App:
             self.clock.tick(FPS)
         pygame.quit()
         sys.exit()
+
 #######################HELPER FUNCTIONS####################################
 
     def load(self):
@@ -55,10 +66,17 @@ class App:
         with open("walls.txt", 'r') as file:
             for yidx, line in enumerate(file):
                 for xidx, char in enumerate(line):
-                    if char == "1":
+                    if char in "1":
                         self.walls.append(vec(xidx, yidx))
-                    elif char == "C" or char == "T":
-                        self.coins.append(vec(xidx, yidx))
+                    elif char == "U":
+                        self.powerups.append(Item(self, "power", vec(xidx, yidx)))
+                    elif char == "R":
+                        self.respawn = vec(xidx, yidx)
+                        print(self.respawn)
+                    elif char in ["C", "T", "b", "p", "i", "c"]:
+                        self.coins.append(Item(self, "coin", vec(xidx, yidx)))
+                        if char in ["b", "p", "i", "c"]:
+                            self.scatter_targets.append(vec(xidx, yidx))
                         if char == "T":
                             self.turns.append(vec(xidx, yidx))
                     elif char == "P":
@@ -80,10 +98,10 @@ class App:
     
     def reset(self):
         self.player.lives = 3
-        self.player.current_score = 0
+        self.current_score = 0
         self.player.grid_pos = vec(self.player.starting_pos)
         self.player.pix_pos = self.player.get_pix_pos()
-        self.player.direction *= 0
+        self.direction = vec(1, 0)
         for enemy in self.enemies:
             enemy.grid_pos = vec(enemy.starting_pos)
             enemy.pix_pos = enemy.get_pix_pos()
@@ -91,13 +109,16 @@ class App:
 
         self.coins = []
         self.turns = []
+        self.powerups = []
         with open("walls.txt", 'r') as file:
             for yidx, line in enumerate(file):
                 for xidx, char in enumerate(line):
                     if char == 'C' or char == "T":
-                        self.coins.append(vec(xidx, yidx))
+                        self.coins.append(Item(self, "coin", vec(xidx, yidx)))
                         if char == "T":
                             self.turns.append(vec(xidx, yidx))
+                    elif char == "U":
+                        self.powerups.append(Item(self, "power", vec(xidx, yidx)))
         self.state = "playing"
 
 
@@ -154,17 +175,22 @@ class App:
             enemy.update()
         
         for enemy in self.enemies:
-            if enemy.grid_pos == self.player.grid_pos:
+            if enemy.grid_pos == self.player.grid_pos and enemy.state == "chase":
                 self.remove_life()
+            elif enemy.grid_pos == self.player.grid_pos and enemy.state == "scatter":
+                enemy.grid_pos = vec(enemy.starting_pos)
+                enemy.pix_pos = enemy.get_pix_pos()
+                self.current_score += 100
+                
 
     def playing_draw(self):
         self.screen.fill(BLACK)
         self.screen.blit(self.background, (TOP_BOTTOM_BUFFER // 2, TOP_BOTTOM_BUFFER // 2))
         # self.draw_grid()
-        self.draw_coins()
+        self.draw_items()
         self.draw_text('HIGH SCORE: 0', self.screen, [25, 0], START_FONT_SIZE, WHITE,
                        START_FONT)
-        self.draw_text('SCORE: {}'.format(self.player.current_score), self.screen, [WIDTH - 125, 0], START_FONT_SIZE, WHITE,
+        self.draw_text('SCORE: {}'.format(self.current_score), self.screen, [WIDTH - 125, 0], START_FONT_SIZE, WHITE,
                        START_FONT)
         self.player.draw()
         for enemy in self.enemies:
@@ -184,14 +210,18 @@ class App:
                 enemy.pix_pos = enemy.get_pix_pos()
                 enemy.direction *= 0
 
-    def draw_coins(self):
+    def draw_items(self):
         for coin in self.coins:
-            pygame.draw.circle(self.screen, GREY,
-                               (int(coin.x*self.cell_width)+self.cell_width//2+TOP_BOTTOM_BUFFER//2,
-                                int(coin.y*self.cell_height)+self.cell_height//2+TOP_BOTTOM_BUFFER//2), 2)
+            coin.draw()
+        
+        for powerup in self.powerups:
+            powerup.draw()
+    
+    
+
     def make_enemies(self):
         for idx, pos in enumerate(self.e_pos):
-            self.enemies.append(Enemy(self, vec(pos), idx))
+            self.enemies.append(Enemy(self, vec(pos), idx, self.scatter_targets[idx]) )
 
 ########################### GAME OVER FUNCTIONS ################################
 

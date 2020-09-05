@@ -11,13 +11,14 @@ COLS = 28
 
 
 #colour settings
-BLACK = (0,0,0)
+BLACK = (0, 0, 0)
+BLUE = (3, 57, 252)
 GREY = (107,107,107)
 RED = (208,22,22)
 WHITE = (240,240,240)
 ORANGE = (217, 155, 22)
 PLAYER_COLOUR = (222, 210, 42)
-AQUA = (15, 153, 146)
+AQUA = (0, 238, 255)
 LILAC = (196, 167, 194)
 #font settings
 START_FONT_SIZE = 18
