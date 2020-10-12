@@ -10,7 +10,6 @@ setting = Settings()
 
 class App:
     def __init__(self):
-        print(vars(setting))
         self.screen = pygame.display.set_mode((setting.WIDTH, setting.HEIGHT))
         self.clock = pygame.time.Clock()
         self.running = True
@@ -35,7 +34,10 @@ class App:
         self.player = Player(self, vec(self.p_pos))
         self.make_enemies()
         self.current_score = 0
+        self.highscore = self.get_highscore()
         self.level = 1
+        self.difficulty = 'normal'
+        self.map_type = 'basic'
         
 
     def run(self):
@@ -52,6 +54,10 @@ class App:
                 self.game_over_events()
                 self.game_over_update()
                 self.game_over_draw()
+            elif self.state == 'settings':
+                self.settings_events()
+                self.settings_update()
+                self.settings_draw()
             else:
                 self.running = False
             self.clock.tick(setting.fps)
@@ -102,8 +108,14 @@ class App:
     
     def reset(self, condition):
         if condition == "hard reset":
+            self.highscore = self.current_score
             self.current_score = 0
-        self.player.lives = 3
+            f = open("highscore.txt", "w")
+            f.write(str(self.highscore))
+            f.close
+            f = open("highscore.txt", "r")
+            print(f.read())
+            self.player.lives = 3
         self.player.grid_pos = vec(self.player.starting_pos)
         self.player.pix_pos = self.player.get_pix_pos()
         self.direction = vec(1, 0)
@@ -142,15 +154,24 @@ class App:
             if event.type == pygame.QUIT:
                 self.running = False
             if event.type == pygame.KEYDOWN and (event.key == pygame.K_RETURN or event.key == pygame.K_KP_ENTER):
+                #if self.difficulty == 'advanced':                    
                 self.state = 'playing'
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
+                print('pressed')
+                self.state = 'settings'
 
     def start_update(self):
         pass
 
     def start_draw(self):
         self.screen.fill(setting.BLACK)
-        self.draw_text('HIGH SCORE', self.screen, [25, 0], setting.START_FONT_SIZE, setting.WHITE,
-                       setting.START_FONT)
+        if self.highscore > 0:
+            self.draw_text('HIGH SCORE: {}'.format(self.highscore), self.screen, [25, 0], setting.START_FONT_SIZE, setting.WHITE, setting.START_FONT)
+        else:
+            self.draw_text('HIGH SCORE: {}'.format(self.current_score), self.screen, [25, 0], setting.START_FONT_SIZE, setting.WHITE, setting.START_FONT)
+        
+        self.draw_text("PACMAN", self.screen, [setting.WIDTH//2, 100],  52, setting.RED, setting.START_FONT, centered=True)
+        self.draw_text("EMULATOR", self.screen, [setting.WIDTH//2, 160],  52, setting.RED, setting.START_FONT, centered=True)
         self.draw_text('START [ENTER]', self.screen, [setting.WIDTH // 2, setting.HEIGHT // 2], setting.START_FONT_SIZE, setting.ORANGE, setting.START_FONT, centered=True)
         self.draw_text('SETTINGS [SPACE]', self.screen, [setting.WIDTH // 2, setting.HEIGHT // 2  + 80], setting.START_FONT_SIZE, setting.LILAC, setting.START_FONT,
                        centered=True)
@@ -158,6 +179,49 @@ class App:
                        setting.START_FONT, centered=True)
         pygame.display.update()
 
+#######################Settings FUNCTIONS####################################
+
+
+    def settings_events(self):
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                self.running = False
+            if event.type == pygame.KEYDOWN: 
+                if event.key == pygame.K_BACKSPACE:
+                    self.state = 'start'
+                if event.key == pygame.K_n:
+                    self.difficulty = 'normal'
+                if event.key == pygame.K_a:
+                    self.difficulty = 'advanced'
+                if event.key == pygame.K_b:
+                    self.map_type = 'basic'
+                if event.key == pygame.K_h:
+                    self.map_type = 'hexagonal'
+    
+    def settings_update(self):
+        pass
+    
+    def settings_draw(self):
+        self.screen.fill(setting.BLACK)
+        self.draw_text('MENU[BKSP]', self.screen, [setting.WIDTH//2 - 50, 0], setting.START_FONT_SIZE, setting.WHITE, setting.START_FONT)
+        self.draw_text("SETTINGS", self.screen, [setting.WIDTH//2, 100],  52, setting.RED, setting.START_FONT, centered=True)        
+        self.draw_text('DIFFICULTY', self.screen, [setting.WIDTH//2, setting.HEIGHT//2 - 100],  32, (190, 190, 190), setting.START_FONT, centered=True)
+        if self.difficulty == 'normal':
+            self.draw_text('NORMAL[N]', self.screen, [setting.WIDTH//2 - 100, setting.HEIGHT//2 - 50], setting.START_FONT_SIZE, setting.BLUE, setting.START_FONT, centered=True)
+            self.draw_text('ADVANCED[A]', self.screen, [setting.WIDTH//2 + 100, setting.HEIGHT//2 - 50], setting.START_FONT_SIZE, setting.WHITE, setting.START_FONT, centered=True)
+        else:
+            self.draw_text('NORMAL[N]', self.screen, [setting.WIDTH//2 - 100, setting.HEIGHT//2 - 50], setting.START_FONT_SIZE, setting.WHITE, setting.START_FONT, centered=True)
+            self.draw_text('ADVANCED[A]', self.screen, [setting.WIDTH//2 + 100, setting.HEIGHT//2 - 50], setting.START_FONT_SIZE, setting.BLUE, setting.START_FONT, centered=True)
+        
+        self.draw_text('MAP TYPE', self.screen, [setting.WIDTH//2, setting.HEIGHT//2 + 100],  32, (190, 190, 190), setting.START_FONT, centered=True)
+        if self.map_type == 'basic':
+            self.draw_text('BASIC[B]', self.screen, [setting.WIDTH//2 - 100, setting.HEIGHT//2 + 150], setting.START_FONT_SIZE, setting.BLUE, setting.START_FONT, centered=True)
+            self.draw_text('HEXAGONAL[H]', self.screen, [setting.WIDTH//2 + 100, setting.HEIGHT//2 + 150], setting.START_FONT_SIZE, setting.WHITE, setting.START_FONT, centered=True)
+        else:
+            self.draw_text('BASIC[B]', self.screen, [setting.WIDTH//2 - 100, setting.HEIGHT//2 + 150], setting.START_FONT_SIZE, setting.WHITE, setting.START_FONT, centered=True)
+            self.draw_text('HEXAGONAL[H]', self.screen, [setting.WIDTH//2 + 100, setting.HEIGHT//2 + 150], setting.START_FONT_SIZE, setting.BLUE, setting.START_FONT, centered=True)
+        pygame.display.update()
+        
 #######################LEVEL CHANGER FUNCTIONS####################################
 
     def new_level(self):
@@ -181,6 +245,9 @@ class App:
                     self.player.move(vec(0, -1))
                 if event.key == pygame.K_DOWN:
                     self.player.move(vec(0, 1))
+                if event.key == pygame.K_BACKSPACE:
+                    self.reset('hard reset')
+                    self.state = 'start'
 
     def playing_update(self):
         self.player.update()
@@ -195,10 +262,12 @@ class App:
         self.screen.blit(self.background, (setting.TOP_BOTTOM_BUFFER // 2, setting.TOP_BOTTOM_BUFFER // 2))
         # self.draw_grid()
         self.draw_items()
-        self.draw_text('HIGH SCORE: 0', self.screen, [25, 0], setting.START_FONT_SIZE, setting.WHITE,
-                       setting.START_FONT)
-        self.draw_text('SCORE: {}'.format(self.current_score), self.screen, [setting.WIDTH - 135, 0], setting.START_FONT_SIZE, setting.WHITE,
-                       setting.START_FONT)
+        self.draw_text('MENU[BKSP]', self.screen, [setting.WIDTH//2 - 50, 0], setting.START_FONT_SIZE, setting.WHITE, setting.START_FONT)
+        if self.highscore > 0:
+            self.draw_text('HIGH SCORE: {}'.format(self.highscore), self.screen, [25, 0], setting.START_FONT_SIZE, setting.WHITE, setting.START_FONT)
+        else:
+            self.draw_text('HIGH SCORE: {}'.format(self.current_score), self.screen, [25, 0], setting.START_FONT_SIZE, setting.WHITE, setting.START_FONT)
+        self.draw_text('SCORE: {}'.format(self.current_score), self.screen, [setting.WIDTH - 135, 0], setting.START_FONT_SIZE, setting.WHITE, setting.START_FONT)
         self.player.draw()
         for enemy in self.enemies:
             enemy.draw()
@@ -215,6 +284,8 @@ class App:
                 self.state = "start"
             if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                 self.running = False
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_BACKSPACE:
+                self.state = 'start'
 
     def game_over_update(self):
         pass
@@ -222,9 +293,8 @@ class App:
     def game_over_draw(self):
         self.screen.fill(setting.BLACK)
         again_text = "CONTINUE [SPACE]"
-        self.draw_text("GAME OVER", self.screen, [setting.WIDTH//2, 100],  52, RED, "arial", centered=True)
-        self.draw_text(again_text, self.screen, [
-                       setting.WIDTH//2, setting.HEIGHT//2],  36, (190, 190, 190), "arial", centered=True)
+        self.draw_text("GAME OVER", self.screen, [setting.WIDTH//2, 100],  52, setting.RED, setting.START_FONT, centered=True)
+        self.draw_text(again_text, self.screen, [setting.WIDTH//2, setting.HEIGHT//2],  36, (190, 190, 190), setting.START_FONT, centered=True)
         
         pygame.display.update()
 
@@ -279,4 +349,12 @@ class App:
                 enemy.pix_pos = enemy.get_pix_pos()
                 enemy.direction *= 0
     
-    
+    def get_highscore(self):
+        try:
+            f = open("highscore.txt", "r")
+            highscore = int(f.readline())
+            print("highscore", highscore)
+            f.close()
+        except:
+            highscore = 0
+        return highscore
