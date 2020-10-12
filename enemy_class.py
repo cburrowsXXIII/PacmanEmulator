@@ -1,3 +1,15 @@
+"""
+This module describes the Enemy class and provides all functionality for enemy objects created by the controller.
+The enemies each have unique personalities in how they chase the player:
+The red ghost directly chases the player using A* pathfinding and has a higher speed.
+The blue ghost periodically chases the player and otherwise just wanders the maze randomly
+The pink ghost uses A* to find the next place that the player will be
+The yellow ghost does the same yet switches to flee occasionally
+
+    pydoc -w enemy_class
+
+"""
+
 import pygame
 import random
 from settings import Settings
@@ -6,6 +18,9 @@ vec = pygame.math.Vector2
 
 
 class Enemy:
+    """
+    Provides attributes and methods for all Enemy objects within Pacman game.
+    """
     def __init__(self, app, pos, id, scatter_target):
         self.setting = Settings()
         self.app = app
@@ -29,6 +44,9 @@ class Enemy:
         self.speedy_timer = 0
 
     def update(self):
+        """
+        Function updates the enemy every frame
+        """
         self.speed = self.set_speed()
         self.target = self.set_target()
         if self.target != self.grid_pos:
@@ -43,10 +61,16 @@ class Enemy:
                             self.app.cell_height//2)//self.app.cell_height+1
 
     def draw(self):
+        """
+        Function draws the enemy
+        """
         pygame.draw.circle(self.app.screen, self.colour,
                            (int(self.pix_pos.x), int(self.pix_pos.y)), self.radius)
 
     def set_speed(self):
+        """
+        Function sets speed characteristic
+        """
         if self.personality in ["speedy", "scared"] and self.state != "scatter":
             if self.speedy_timer >= 200:
                 speed = 1
@@ -56,6 +80,9 @@ class Enemy:
         return speed
 
     def set_target(self):
+        """
+        Function sets target for each enemy based on their personalities for CHASE state and uses SCATTER state when player has consumed powerup
+        """
         #SCATTER Handler
         if self.state == "scatter": 
             self.has_scattered = True           
@@ -87,6 +114,9 @@ class Enemy:
                     return vec(self.setting.COLS-2, self.setting.ROWS-2)
 
     def time_to_move(self):
+        """
+        Determines if an enemy can physically move
+        """
         if int(self.pix_pos.x+self.setting.TOP_BOTTOM_BUFFER//2) % self.app.cell_width == 0:
             if self.direction == vec(1, 0) or self.direction == vec(-1, 0) or self.direction == vec(0, 0):
                 return True
@@ -96,6 +126,9 @@ class Enemy:
         return False
 
     def move(self):
+        """
+        Handles the enemy move mechanics based on personalities
+        """
         if self.personality == "clyde":
             self.clyde_timer += 1
             if self.clyde_timer >= 200:
@@ -115,17 +148,26 @@ class Enemy:
             self.direction = self.get_path_direction(self.target)
 
     def get_path_direction(self, target):
+        """
+        One of the steps in the multifunction A* algorithm. Focused on finding the next cell
+        """
         next_cell = self.find_next_cell_in_path(target)
         xdir = next_cell[0] - self.grid_pos[0]
         ydir = next_cell[1] - self.grid_pos[1]
         return vec(xdir, ydir)
 
     def find_next_cell_in_path(self, target):
+        """
+        One of the steps in the multifunction A* algorithm. Focused on finding the next cell in the path list
+        """
         path = self.BFS([int(self.grid_pos.x), int(self.grid_pos.y)], [
                         int(target[0]), int(target[1])])
         return path[1]
 
     def BFS(self, start, target):
+        """
+        Provides all remaining A* functionality
+        """
         grid = [[0 for x in range(28)] for x in range(30)]
         for cell in self.app.walls:
             if cell.x < 28 and cell.y < 30:
@@ -158,6 +200,9 @@ class Enemy:
         return shortest
 
     def get_random_direction(self):
+        """
+        Function used for yellow ghosts occasional random movement
+        """
         while True:
             number = random.randint(-2, 1)
             if number == -2:
@@ -174,11 +219,17 @@ class Enemy:
         return vec(x_dir, y_dir)
 
     def get_pix_pos(self):
+        """
+        Gets the current position on the grid that the enemy is situated in
+        """
         return vec((self.grid_pos.x*self.app.cell_width)+self.setting.TOP_BOTTOM_BUFFER//2+self.app.cell_width//2,
                    (self.grid_pos.y*self.app.cell_height)+self.setting.TOP_BOTTOM_BUFFER//2 +
                    self.app.cell_height//2)
 
     def set_colour(self):
+        """
+        Sets the enemy colour based on their personalities
+        """
         if self.enemy_id == 0:
             return self.setting.RED
         if self.enemy_id == 1:
@@ -189,6 +240,9 @@ class Enemy:
             return self.setting.AQUA
 
     def set_personality(self):
+        """
+        Initialises the enemy personality based on their ID
+        """
         if self.enemy_id == 0:
             return "speedy"
         elif self.enemy_id == 1:
@@ -199,11 +253,17 @@ class Enemy:
             return "scared"
 
     def change_state(self, state):
+        """
+        Function communicates with the controller for when a powerup has been selected
+        """
         if self.state == "scatter":
             self.scatter_time_limit += 200
         self.state = state
 
     def respawn(self):
+        """
+        Handles enemy respawn after death
+        """
         self.state = "chase"
         self.grid_pos = vec(self.starting_pos)
         self.pix_pos = self.get_pix_pos()

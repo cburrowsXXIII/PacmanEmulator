@@ -35,7 +35,7 @@ class App:
         self.make_enemies()
         self.current_score = 0
         self.highscore = self.get_highscore()
-        self.level = 1
+        self.level = 0
         self.difficulty = 'normal'
         self.map_type = 'basic'
         
@@ -60,7 +60,7 @@ class App:
                 self.settings_draw()
             else:
                 self.running = False
-            self.clock.tick(setting.fps)
+            self.clock.tick(setting.fps+self.level)
         pygame.quit()
         sys.exit()
 
@@ -108,13 +108,12 @@ class App:
     
     def reset(self, condition):
         if condition == "hard reset":
-            self.highscore = self.current_score
-            self.current_score = 0
-            f = open("highscore.txt", "w")
-            f.write(str(self.highscore))
-            f.close
-            f = open("highscore.txt", "r")
-            print(f.read())
+            if self.current_score > self.highscore:
+                self.highscore = self.current_score
+                f = open("highscore.txt", "w")
+                f.write(str(self.highscore))
+                f.close
+            self.current_score = 0            
             self.player.lives = 3
         self.player.grid_pos = vec(self.player.starting_pos)
         self.player.pix_pos = self.player.get_pix_pos()
@@ -225,7 +224,7 @@ class App:
 #######################LEVEL CHANGER FUNCTIONS####################################
 
     def new_level(self):
-        self.level += 1
+        self.level += 5
         self.reset("new level")
         self.state = "playing"
 
@@ -262,6 +261,8 @@ class App:
         self.screen.blit(self.background, (setting.TOP_BOTTOM_BUFFER // 2, setting.TOP_BOTTOM_BUFFER // 2))
         # self.draw_grid()
         self.draw_items()
+        if len(self.coins) == 0:
+            self.new_level()
         self.draw_text('MENU[BKSP]', self.screen, [setting.WIDTH//2 - 50, 0], setting.START_FONT_SIZE, setting.WHITE, setting.START_FONT)
         if self.highscore > 0:
             self.draw_text('HIGH SCORE: {}'.format(self.highscore), self.screen, [25, 0], setting.START_FONT_SIZE, setting.WHITE, setting.START_FONT)
